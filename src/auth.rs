@@ -1,0 +1,49 @@
+use bcrypt::{hash, verify, DEFAULT_COST};
+use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
+use serde::{Deserialize, Serialize};
+use std::env;
+
+#[derive(Debug, Serialize, Deserialize)]
+
+//Informações dentro do JWT
+pub struct Claims {
+    pub subject: String, // quem é o usuário (username) 
+    pub expiration: usize, // quando expira (timestamp Unix)
+}
+
+//Hash de senha
+pub fn hash_password(password: &str) -> Result<String, bcrypt::BcryptError> {
+    hash(password, DEFAULT_COST)
+}
+
+// Verifica senha contra hash
+pub fn verify_password(password: &str, hash: &str) -> Result<bool, bcrypt::BcryptError> {
+    verify(password, hash)
+}
+
+// Gera JWT token (válido por 24h)
+pub fn create_jwt(username: &str) -> Result<String, jsonwebtoken:: errors::Error> {
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET not in .env");
+
+    let expiration_time = chrono::Utc::now().checked_add_signed(chrono::Duration::hours(24)).expect("invalid timestamp").timestamp() as usize;
+
+    let claims = Claims {
+        subject: username.to_owned(),
+        expiration: expiration_time,
+    };
+
+    encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
+}
+
+//Valida JWT token
+pub fn validate_jwt(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET should be in .env environment");
+
+    let token_data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_ref()),
+        &Validation::default()
+    )?;
+
+    Ok(token_data.claims)
+}
