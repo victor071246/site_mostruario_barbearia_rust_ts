@@ -1,3 +1,10 @@
+use axum::{
+    extract::Request,
+    http::{header, StatusCode},
+    middleware::Next,
+    response::Response,
+};
+use crate::errors::AppError;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
 use serde::{Deserialize, Serialize};
@@ -46,4 +53,13 @@ pub fn validate_jwt(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
     )?;
 
     Ok(token_data.claims)
+}
+
+//Middleware que valida JWT antes de chamar os handlers
+pub async fn auth_middleware(
+    mut req: Request,
+    next: Next,
+) -> Result<Response, AppError> {
+
+    Ok()
 }
