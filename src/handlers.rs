@@ -6,7 +6,7 @@ use axum::{
 use sqlx::PgPool;
 use serde_json::{json, Value};
 
-use crate::models::*;
+use crate::{errors::AppError, models::*};
 use crate::auth::*;
 
 // Estado compartilhado entre handlers
@@ -18,9 +18,9 @@ pub struct AppState {
 // Rotas de autenticação
 
 // POST /auth/register - Cadastrar admin
-pub async fn register(State(state): State<AppState>, Json(payload): Json<CreateUser>) -> Result <Json<Value>, StatusCode> {
+pub async fn register(State(state): State<AppState>, Json(payload): Json<CreateUserRequest>) -> Result <Json<Value>, AppError> {
     //Hash da senha
-    let password_hash = hash_password(&payload.password).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let password_hash = hash_password(&payload.password).map_err(|_| AppError::new("Failed do hash string", StatusCode::LOCKED))?;
 
     // Insere no banco
     let result = sqlx::query!(
@@ -36,6 +36,23 @@ pub async fn register(State(state): State<AppState>, Json(payload): Json<CreateU
             "message": format!("Usuário {payload_username} criado com sucesso"),
             "user_id": row.id
         }))),
-        Err(_) => Err(StatusCode::CONFLICT),
+        Err(_) =>Err(AppError::new("User already exists", StatusCode::CONFLICT)),
     }
-} 
+}
+
+// POST /auth/login - Fazer login
+pub async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>) -> Result<Json<Value>, AppError> {
+
+    // Busca usuário no banco
+    let user = sqlx::quer_as!(
+        User,
+        "SELECT id, username, password_hash, created_at FROM users WHERE username = $1",
+        payload.
+    ).fetch_one(&state.pool).await.map_err(|error| match error {
+        sqlx::Error:RowNotFound => AppError::new("User not found", StatusCode::NOT_FOUND),
+        _ => AppError::new("Database error", StatusCode::INTERNAL_SERVER_ERROR),
+    })?;
+
+    // Verifica a senha
+    let password_valid = verify_password(&payload.password, hash)
+}

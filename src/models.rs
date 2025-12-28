@@ -11,10 +11,11 @@ pub struct User {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CreateUser {
+pub struct CreateUserRequest {
     pub username: String,
     pub password: String,
 }
+
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
