@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-#[derive(Debug, Serialize, FromRow)]
+#[derive(Serialize, FromRow)]
 pub struct User {
     pub id: i32,
     pub username: String,
@@ -11,44 +11,47 @@ pub struct User {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct CreateUserRequest {
     pub username: String,
     pub password: String,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct LoginRequest {
     pub username: String,
     pub password: String,
 }
 
-#[derive(Debug, Serialize, FromRow)]
-pub struct Product {
+#[derive(Serialize, FromRow)]
+pub struct Item {
     pub id: i32,
     pub name: String,
     pub description: Option<String>,
     pub price: rust_decimal::Decimal,
+    pub stock: i32,
     pub category: String,
     pub image_url: Option<String>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreateProduct {
+#[derive(Deserialize)]
+pub struct CreateItemRequest {
     pub name: String,
     pub description: Option<String>,
     pub price: rust_decimal::Decimal,
+    pub stock: i32,
     pub category: String,
     pub image_url: Option<String>
 }
 
-#[derive(Debug, Deserialize)]
-pub struct UpdateProduct {
+#[derive(Deserialize)]
+pub struct UpdateItemRequest {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub stock: Option<i32>,
     pub price: Option<rust_decimal::Decimal>,
     pub category: Option<String>,
     pub image_url: Option<String>, 
