@@ -7,8 +7,8 @@ use std::env;
 
 //Informações dentro do JWT
 pub struct Claims {
-    pub subject: String, // quem é o usuário (username) 
-    pub expiration: usize, // quando expira (timestamp Unix)
+    pub sub: String, // quem é o usuário (username) 
+    pub exp: usize, // quando expira (timestamp Unix)
 }
 
 //Hash de senha
@@ -28,8 +28,8 @@ pub fn create_jwt(username: &str) -> Result<String, jsonwebtoken:: errors::Error
     let expiration_time = chrono::Utc::now().checked_add_signed(chrono::Duration::hours(24)).expect("invalid timestamp").timestamp() as usize;
 
     let claims = Claims {
-        subject: username.to_owned(),
-        expiration: expiration_time,
+        sub: username.to_owned(),
+        exp: expiration_time,
     };
 
     encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
