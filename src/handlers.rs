@@ -44,15 +44,30 @@ pub async fn register(State(state): State<AppState>, Json(payload): Json<CreateU
 pub async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>) -> Result<Json<Value>, AppError> {
 
     // Busca usuário no banco
-    let user = sqlx::quer_as!(
+    let user = sqlx::query_as!(
         User,
-        "SELECT id, username, password_hash, created_at FROM users WHERE username = $1",
-        payload.
+        "SELECT id, username, password_hash, created_at as \"created_at!\" FROM users WHERE username = $1",
+        payload.username
     ).fetch_one(&state.pool).await.map_err(|error| match error {
-        sqlx::Error:RowNotFound => AppError::new("User not found", StatusCode::NOT_FOUND),
+        sqlx::Error::RowNotFound => AppError::new("User not found", StatusCode::NOT_FOUND),
         _ => AppError::new("Database error", StatusCode::INTERNAL_SERVER_ERROR),
     })?;
 
     // Verifica a senha
-    let password_valid = verify_password(&payload.password, hash)
+    let password_valid = verify_password(&payload.password, &user.password_hash).map_err(|_| AppError::new("Password verification failed", StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    if !password_valid {
+        return Err(AppError::new("Invalid password", StatusCode::UNAUTHORIZED));
+    }
+
+    // 3. Gera token JWT
+    let token = create_jwt(&user.username).to_owned().map_err(|_| AppError::new("Failed to create token", StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    Ok(Json(json!({
+        "message": "Login successful",
+        "token": token,
+        "user": {
+            "username": user.username
+        }
+    })))
 }

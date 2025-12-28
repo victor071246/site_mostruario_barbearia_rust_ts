@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -7,7 +8,7 @@ pub struct User {
     pub username: String,
     #[serde(skip_serializing)]
     pub password_hash: String,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Debug, Deserialize)]
