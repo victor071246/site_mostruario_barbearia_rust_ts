@@ -1,7 +1,6 @@
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    Json
+    Json, extract::{Path, State}, http::{HeaderMap, StatusCode, header},
+    response::IntoResponse,
 };
 use sqlx::PgPool;
 use serde_json::{json, Value};
@@ -41,7 +40,7 @@ pub async fn register(State(state): State<AppState>, Json(payload): Json<CreateU
 }
 
 // POST /auth/login - Fazer login
-pub async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>) -> Result<Json<Value>, AppError> {
+pub async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>) -> Result<impl IntoResponse, AppError> {
 
     // Busca usuário no banco
     let user = sqlx::query_as!(
@@ -63,13 +62,21 @@ pub async fn login(State(state): State<AppState>, Json(payload): Json<LoginReque
     // 3. Gera token JWT
     let token = create_jwt(&user.username).to_owned().map_err(|_| AppError::new("Failed to create token", StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    Ok(Json(json!({
-        "message": "Login successful",
-        "token": token,
-        "user": {
-            "username": user.username
-        }
-    })))
+    let cookie = format!(
+        "token={}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400",
+        token
+    );
+
+    let mut headers = HeaderMap::new();
+    headers.insert(header::SET_COOKIE, cookie.parse().unwrap());
+
+    Ok((
+        headers,
+        Json(json!({
+            "message": "Login successful",
+            "user": { "username": user.username}
+        }))
+    ))
 }
 
 

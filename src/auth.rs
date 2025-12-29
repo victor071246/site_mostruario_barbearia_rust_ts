@@ -61,5 +61,21 @@ pub async fn auth_middleware(
     next: Next,
 ) -> Result<Response, AppError> {
 
-    Ok()
+    // Tenta pegar do header Authorization ou do cookie
+    let cookies = req.headers().get(header::COOKIE).and_then(|h| h.to_str().ok()).ok_or_else(|| AppError::new("Cookies missing", StatusCode::UNAUTHORIZED))?;
+
+    let token = cookies.split(';').find_map(|cookie| {
+        let cookie = cookie.trim();
+        cookie.strip_prefix("token=")
+    })
+    .ok_or_else(|| AppError::new("Token not found in cookies", StatusCode::UNAUTHORIZED))?;
+
+    // Valida o token
+    let claims = validate_jwt(token).map_err(|_| AppError::new("Invalid or expired token", StatusCode::UNAUTHORIZED))?;
+
+
+    // Guarda o username no request
+    req.extensions_mut().insert(claims.sub);
+
+    Ok(next.run(req).await)
 }
