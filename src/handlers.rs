@@ -7,12 +7,8 @@ use serde_json::{json, Value};
 
 use crate::{errors::AppError, models::*};
 use crate::auth::*;
+use crate::db::AppState;
 
-// Estado compartilhado entre handlers
-#[derive(Clone)]
-pub struct AppState {
-    pub pool: PgPool,
-}
 
 // Rotas de autenticação
 

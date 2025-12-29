@@ -5,6 +5,7 @@ use axum::{
 };
 use crate::handlers::*;
 use crate::auth::auth_middleware;
+use crate::db::AppState;
 
 pub fn create_routes(state: AppState) -> Router {
 
