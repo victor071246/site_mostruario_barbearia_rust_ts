@@ -5,17 +5,19 @@ mod models;
 mod handlers;
 mod routes;
 
-use crate::{db::{AppState, create_pool}, routes::create_routes};
-use sqlx::postgres::PgPoolOptions;
 use std::env;
 use dotenv::dotenv;
+use crate::{db::{AppState, create_pool}, routes::create_routes};
+
+const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
 #[tokio::main]
 async fn main() {
     // Carrega as variáveis do dotenv
     dotenv().ok();
 
-    let database_url = env::var("DATABASE URL").expect("DATABASE_URL must be set in .env");
+    let database_url = env::var(DATABASE_URL_KEY).expect(&format!("{} must be set in .env", DATABASE_URL_KEY));
+
 
     let pool = create_pool(&database_url).await.expect("Failed to connect to database");
 

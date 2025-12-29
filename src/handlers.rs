@@ -2,7 +2,6 @@ use axum::{
     Json, extract::{Path, State}, http::{HeaderMap, StatusCode, header},
     response::IntoResponse,
 };
-use sqlx::PgPool;
 use serde_json::{json, Value};
 
 use crate::{errors::AppError, models::*};
@@ -28,7 +27,7 @@ pub async fn register(State(state): State<AppState>, Json(payload): Json<CreateU
 
     match  result {
         Ok(row) => Ok(Json(json!({
-            "message": format!("Usuário {payload_username} criado com sucesso"),
+            "message": format!("User {payload_username} created successfuly"),
             "user_id": row.id
         }))),
         Err(_) =>Err(AppError::new("User already exists", StatusCode::CONFLICT)),

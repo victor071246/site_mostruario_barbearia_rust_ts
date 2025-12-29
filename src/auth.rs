@@ -10,6 +10,9 @@ use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey}
 use serde::{Deserialize, Serialize};
 use std::env;
 
+const JWT_SECRET_KEY: &str = "JWT_SECRET";
+
+
 #[derive(Debug, Serialize, Deserialize)]
 
 //Informações dentro do JWT
@@ -30,7 +33,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, bcrypt::Bcryp
 
 // Gera JWT token (válido por 24h)
 pub fn create_jwt(username: &str) -> Result<String, jsonwebtoken:: errors::Error> {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET not in .env");
+    let secret = env::var(JWT_SECRET_KEY).expect(&format!("{} not in .env", JWT_SECRET_KEY));
 
     let expiration_time = chrono::Utc::now().checked_add_signed(chrono::Duration::hours(24)).expect("invalid timestamp").timestamp() as usize;
 
