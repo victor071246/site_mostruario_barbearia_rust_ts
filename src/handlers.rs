@@ -1,5 +1,5 @@
 use axum::{
-    Json, extract::{Path, State}, http::{HeaderMap, StatusCode, header},
+    Json, extract::{Path, State, Multipart}, http::{HeaderMap, StatusCode, header},
     response::IntoResponse,
 };
 use serde_json::{json, Value};
@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 use crate::{errors::AppError, models::*};
 use crate::auth::*;
 use crate::db::AppState;
+use crate::extractors::image_upload::FormWithImage;
 
 
 // Rotas de autenticação
@@ -106,7 +107,22 @@ pub async fn get_items(State(state): State<AppState>, Path(id): Path<i32>) -> Re
     Ok(Json(item))
 }
 
-pub async fn create_item(State(state): State<AppState>, Json(payload): Json<CreateItemRequest> ) -> Result<Json<Value>, AppError> {
+pub async fn create_item(State(state): State<AppState>, form: FormWithImage ) -> Result<Json<Value>, AppError> {
+
+    let name = form.fields.get("name").ok_or(AppError::new("name is required", StatusCode::BAD_REQUEST))?;
+
+    let price = form.fields.get("price").ok_or(AppError::new("price is required", StatusCode::BAD_REQUEST))?
+    .parse::<rust_decimal::Decimal>()
+    .map_err(|_| AppError::new("Invalid price", StatusCode::BAD_REQUEST))?;
+
+    let description = form.fields.get("description").ok_or(AppError::new("description is required", StatusCode::BAD_REQUEST))?;
+
+    let category = form.fields.get("category").ok_or(AppError::new("Invalid price", StatusCode::BAD_REQUEST))?;
+
+    let stock = form.fields.get("stock").ok_or(AppError::new("stock ir required", StatusCode::BAD_REQUEST))?
+    .parse::<i32>()
+    .map_err(|_| AppError::new("Invalid stock", StatusCode::BAD_REQUEST))?;
+
 
     let item = sqlx::query_as!(
         Item,
@@ -114,12 +130,12 @@ pub async fn create_item(State(state): State<AppState>, Json(payload): Json<Crea
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, name, description, price, category, image_url, stock, created_at as \"created_at!\", updated_at as \"updated_at!\"
         ",
-        payload.name,
-        payload.description,
-        payload.price,
-        payload.category,
-        payload.image_url,
-        payload.stock
+        name,
+        description,
+        price,
+        category,
+        image_url,
+        stock
     ).fetch_one(&state.pool).await.map_err(|_| AppError::new("Failed to create item", StatusCode::INTERNAL_SERVER_ERROR))?;
 
 

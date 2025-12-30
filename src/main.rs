@@ -4,6 +4,7 @@ mod errors;
 mod models;
 mod handlers;
 mod routes;
+mod extractors;
 
 use std::env;
 use dotenv::dotenv;
