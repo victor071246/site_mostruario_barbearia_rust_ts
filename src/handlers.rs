@@ -110,18 +110,15 @@ pub async fn get_items(State(state): State<AppState>, Path(id): Path<i32>) -> Re
 pub async fn create_item(State(state): State<AppState>, form: FormWithImage ) -> Result<Json<Value>, AppError> {
 
     let name = form.fields.get("name").ok_or(AppError::new("name is required", StatusCode::BAD_REQUEST))?;
-
     let price = form.fields.get("price").ok_or(AppError::new("price is required", StatusCode::BAD_REQUEST))?
     .parse::<rust_decimal::Decimal>()
     .map_err(|_| AppError::new("Invalid price", StatusCode::BAD_REQUEST))?;
-
     let description = form.fields.get("description").ok_or(AppError::new("description is required", StatusCode::BAD_REQUEST))?;
-
     let category = form.fields.get("category").ok_or(AppError::new("Invalid price", StatusCode::BAD_REQUEST))?;
-
     let stock = form.fields.get("stock").ok_or(AppError::new("stock ir required", StatusCode::BAD_REQUEST))?
     .parse::<i32>()
     .map_err(|_| AppError::new("Invalid stock", StatusCode::BAD_REQUEST))?;
+    let image_url = form.image_path; // Campo do extractor
 
 
     let item = sqlx::query_as!(
@@ -149,7 +146,7 @@ pub async fn create_item(State(state): State<AppState>, form: FormWithImage ) ->
 pub async fn update_item(
     State(state): State<AppState>,
     Path(id): Path<i32>,
-    Json(payload): Json<UpdateItemRequest>
+    form: FormWithImage
 ) -> Result<Json<Value>, AppError> {
 
     let current_item = sqlx::query_as!(
@@ -161,6 +158,18 @@ pub async fn update_item(
         sqlx::Error::RowNotFound => AppError::new("Item not found", StatusCode::NOT_FOUND),
         _ => AppError::new("Database error", StatusCode::INTERNAL_SERVER_ERROR)
     })?;
+
+    let name = form.fields.get("name").map(|s| s.to_string()).unwrap_or(current_item.name);
+    let description = form.fields.get("description").map(|s| s.to_string()).or(current_item.description);
+    let price = form.fields.get("price").and_then(|s| s.parse::<rust_decimal::Decimal>().ok())
+    .unwrap_or(current_item.price);
+    let category = form.fields.get("category").map(|s| s.to_string())
+    .unwrap_or(current_item.category);
+    let stock = form.fields.get("stock").and_then(|s| s.parse::<i32>().ok())
+    .unwrap_or(current_item.stock);
+    let image_url = form.image_path.or(current_item.image_url);
+
+
     
     //Usa os valores novos ou mantém os atuais em caso de erro
     let updated_item = sqlx::query_as!(
@@ -169,12 +178,12 @@ pub async fn update_item(
          SET name = $1, description = $2, price = $3, category = $4, image_url = $5, stock = $6, updated_at = NOW()
          WHERE id = $7
          RETURNING id, name, description, price, category, image_url, stock, created_at as \"created_at!\", updated_at as \"updated_at!\"",
-        payload.name.unwrap_or(current_item.name),
-        payload.description.or(current_item.description),
-        payload.price.unwrap_or(current_item.price),
-        payload.category.unwrap_or(current_item.category),
-        payload.image_url.or(current_item.image_url),
-        payload.stock.unwrap_or(current_item.stock),
+        name,
+        description,
+        price,
+        category,
+        image_url,
+        stock,
         id
     ).fetch_one(&state.pool).await.map_err(|_| AppError::new("Failed to update item", StatusCode::INTERNAL_SERVER_ERROR))?;
 
