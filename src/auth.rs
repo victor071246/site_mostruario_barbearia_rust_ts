@@ -65,7 +65,7 @@ pub async fn auth_middleware(
 ) -> Result<Response, AppError> {
 
     // Tenta pegar do header Authorization ou do cookie
-    let cookies = req.headers().get(header::COOKIE).and_then(|h| h.to_str().ok()).ok_or_else(|| AppError::new("Cookies missing", StatusCode::UNAUTHORIZED))?;
+    let cookies = req.headers().get(header::COOKIE).and_then(|header_content| header_content.to_str().ok()).ok_or_else(|| AppError::new("Cookies missing", StatusCode::UNAUTHORIZED))?;
 
     let token = cookies.split(';').find_map(|cookie| {
         let cookie = cookie.trim();

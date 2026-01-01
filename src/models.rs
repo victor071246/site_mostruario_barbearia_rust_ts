@@ -11,19 +11,6 @@ pub struct User {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Deserialize)]
-pub struct CreateUserRequest {
-    pub username: String,
-    pub password: String,
-}
-
-
-#[derive(Deserialize)]
-pub struct LoginRequest {
-    pub username: String,
-    pub password: String,
-}
-
 #[derive(Serialize, FromRow)]
 pub struct Item {
     pub id: i32,
@@ -35,6 +22,24 @@ pub struct Item {
     pub image_url: Option<String>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+}
+
+#[derive(Serialize)]
+pub struct CheckAdminResponse {
+    pub is_admin: bool,
+}
+
+
+#[derive(Deserialize)]
+pub struct CreateUserRequest {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Deserialize)]
+pub struct LoginRequest {
+    pub username: String,
+    pub password: String,
 }
 
 #[derive(Deserialize)]

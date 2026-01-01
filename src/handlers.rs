@@ -1,5 +1,5 @@
 use axum::{
-    Json, extract::{Path, State, Multipart}, http::{HeaderMap, StatusCode, header},
+    Json, extract::{Multipart, Path, Request, State}, http::{HeaderMap, StatusCode, header},
     response::IntoResponse,
 };
 use serde_json::{json, Value};
@@ -208,4 +208,22 @@ pub async fn delete_items (State(state): State<AppState>, Path(id): Path<i32>) -
         "message": "Item deleted successfully",
         "deleted_id": result.id
     })))
+}
+
+//Check user is admin
+pub async fn check_user_is_admin(req: Request) -> Result<Json<CheckAdminResponse>, AppError> {
+
+    let token = req.headers().get(header::COOKIE).and_then(|content| content.to_str().ok())
+    .and_then(|stringfied_cookies| {
+        stringfied_cookies.split(';').find_map(|cookie| cookie.trim().strip_prefix("token="))
+    })
+    .ok_or_else(|| AppError::new("Token not found", StatusCode::UNAUTHORIZED))?;
+
+    let is_admin = match validate_jwt(token) {
+        Ok(_) => true,
+        Err(_) => false,
+
+    };
+
+    Ok(Json(CheckAdminResponse { is_admin}))
 }

@@ -13,6 +13,7 @@ pub fn create_routes(state: AppState) -> Router {
     let public_routes = Router::new()
     .route("/auth/register", post(register))
     .route("/auth/login", post(login))
+    .route("/auth/check-admin", get(check_user_is_admin))
     .route("/items", get(list_items))
     .route("/items/:id", get(get_items));
 
